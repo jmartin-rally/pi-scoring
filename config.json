@@ -1,0 +1,12 @@
+{
+    "name": "PI Scoring App",
+    "className": "CustomApp",
+    "server": "https://demo01.rallydev.com",
+    "sdk": "2.0p5",
+    "javascript": [
+        "App.js"
+    ],
+    "css": [
+        "app.css"
+    ]
+}
