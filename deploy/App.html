@@ -7,22 +7,32 @@
 
     <script type="text/javascript">
         Rally.onReady(function() {
+            /*global console, Ext */
+            /*
+             * 
+             * Pass in app as a config object so we can save from the dialog
+             *  
+             */
             Ext.define( 'PXS.ui.dialog.FormulaDialog', {
             	extend: 'Rally.ui.dialog.Dialog',
             	requires: [ 'Rally.ui.Button' ],
             	closable: false,
             	stateful: false,
             	formula: null,
+            	app: null,
             	config: {
             		
             	},
             	constructor: function(config) {
             		this.mergeConfig(config);
             		this.callParent(arguments);
-            		
+            
             		this.addHeader();
             		this.addEditor();
             		this.addFooter();
+            		if ( this.app && this.app.settings ) {
+            			this.setFormula( this.app.settings.Formula );
+            		}
             	},
             	initComponent: function() {
             		window.dialog = this;
@@ -70,6 +80,7 @@
                                 xtype: 'rallybutton',
                                 text: 'Save & Calculate',
                                 handler: function() {
+                                	this.formula = this.down('#formula_box').getValue();
                                     this._save();
                                 },
                                 scope: this
@@ -87,12 +98,16 @@
                     });
             	},
             	setFormula: function(formula) {
-            		this.formula = formula;
-            		this.down('#formula_box').setValue(this.formula); 
+            		this.down('#formula_box').setValue(formula); 
             	},
             	_save: function() {
             		if (this.fireEvent('beforeformulasave', this.formula) !== false) {
             			console.log("About to save", this.formula);
+            			if ( this.app ) {
+            		        this.app.updateSettingsValues( { settings: { Formula: this.formula } });
+            			} else {
+            				console.log( "No app provided in dialog creation" );
+            			}
             			this.hide();
             		}
             	}
@@ -114,6 +129,7 @@
                 calculation_fields: [],
                 type: null,
                 launch: function() {
+                    console.log("Settings", this.settings );
                     this._addCalculator();
                     this._addFieldPicker();
                     this._addTypePicker();
@@ -121,14 +137,14 @@
                 _addCalculator: function() {
                     var calculator_dialog = Ext.create('PXS.ui.dialog.FormulaDialog', {
                         width: 400,
-                        title: 'Calculator'
+                        title: 'Calculator',
+                        app: this
                     });
             
                     var calculator = Ext.create('Rally.ui.Button', {
                         text: 'Define Calculator',
                         listeners: {
                             click: function( button, event, options ) {
-                                calculator_dialog.setFormula("Fred");
                                 calculator_dialog.show();
                             }
                         }

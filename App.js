@@ -16,6 +16,7 @@ Ext.define('CustomApp', {
     calculation_fields: [],
     type: null,
     launch: function() {
+        console.log("Settings", this.settings );
         this._addCalculator();
         this._addFieldPicker();
         this._addTypePicker();
@@ -23,14 +24,14 @@ Ext.define('CustomApp', {
     _addCalculator: function() {
         var calculator_dialog = Ext.create('PXS.ui.dialog.FormulaDialog', {
             width: 400,
-            title: 'Calculator'
+            title: 'Calculator',
+            app: this
         });
 
         var calculator = Ext.create('Rally.ui.Button', {
             text: 'Define Calculator',
             listeners: {
                 click: function( button, event, options ) {
-                    calculator_dialog.setFormula("Fred");
                     calculator_dialog.show();
                 }
             }

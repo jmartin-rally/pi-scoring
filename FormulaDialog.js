@@ -1,19 +1,29 @@
+/*global console, Ext */
+/*
+ * 
+ * Pass in app as a config object so we can save from the dialog
+ *  
+ */
 Ext.define( 'PXS.ui.dialog.FormulaDialog', {
 	extend: 'Rally.ui.dialog.Dialog',
 	requires: [ 'Rally.ui.Button' ],
 	closable: false,
 	stateful: false,
 	formula: null,
+	app: null,
 	config: {
 		
 	},
 	constructor: function(config) {
 		this.mergeConfig(config);
 		this.callParent(arguments);
-		
+
 		this.addHeader();
 		this.addEditor();
 		this.addFooter();
+		if ( this.app && this.app.settings ) {
+			this.setFormula( this.app.settings.Formula );
+		}
 	},
 	initComponent: function() {
 		window.dialog = this;
@@ -61,6 +71,7 @@ Ext.define( 'PXS.ui.dialog.FormulaDialog', {
                     xtype: 'rallybutton',
                     text: 'Save & Calculate',
                     handler: function() {
+                    	this.formula = this.down('#formula_box').getValue();
                         this._save();
                     },
                     scope: this
@@ -78,12 +89,16 @@ Ext.define( 'PXS.ui.dialog.FormulaDialog', {
         });
 	},
 	setFormula: function(formula) {
-		this.formula = formula;
-		this.down('#formula_box').setValue(this.formula); 
+		this.down('#formula_box').setValue(formula); 
 	},
 	_save: function() {
 		if (this.fireEvent('beforeformulasave', this.formula) !== false) {
 			console.log("About to save", this.formula);
+			if ( this.app ) {
+		        this.app.updateSettingsValues( { settings: { Formula: this.formula } });
+			} else {
+				console.log( "No app provided in dialog creation" );
+			}
 			this.hide();
 		}
 	}
