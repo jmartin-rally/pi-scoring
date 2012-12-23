@@ -5,18 +5,37 @@ Ext.define('CustomApp', {
     items: [ 
         { xtype: 'container', itemId: 'picker_row', defaults: { padding: 5},  layout: { type: 'hbox' }, items: [
 	        { xtype: 'container', itemId: 'type_picker_box' },
-	        { xtype: 'container', itemId: 'column_picker_box' }
+	        { xtype: 'container', itemId: 'column_picker_box' },
+            { xtype: 'container', itemId: 'calculator_box' }
         ]},
         { xtype: 'container', itemId: 'pi_grid_box', padding: 5 }
     ],
+    /*minimum_columns: [ {text: "ID", dataIndex: "FormattedID"}, {text: "Name", dataIndex: "Name", editor: { xtype: "rallytextfield", width: 250 }, flex: 1 } ], */
     minimum_columns: [ {text: "ID", dataIndex: "FormattedID"}, {text: "Name", dataIndex: "Name", flex: 1 } ],
     additional_columns: [],
     calculation_fields: [],
     type: null,
     launch: function() {
-        //Write app code here
+        this._addCalculator();
         this._addFieldPicker();
         this._addTypePicker();
+    },
+    _addCalculator: function() {
+        var calculator_dialog = Ext.create('PXS.ui.dialog.FormulaDialog', {
+            width: 400,
+            title: 'Calculator'
+        });
+
+        var calculator = Ext.create('Rally.ui.Button', {
+            text: 'Define Calculator',
+            listeners: {
+                click: function( button, event, options ) {
+                    calculator_dialog.setFormula("Fred");
+                    calculator_dialog.show();
+                }
+            }
+        });
+        this.down('#calculator_box').add(calculator);
     },
     _addFieldPicker: function() {
         var that = this;
@@ -100,6 +119,9 @@ Ext.define('CustomApp', {
     	this.pi_grid = Ext.create('Rally.ui.grid.Grid', {
     		store: that.pi_store,
             model: 'PortfolioItem/Feature',
+            enableEditing: true,
+            plugins: Ext.create( 'Rally.ui.grid.plugin.CellEditing', {}),
+                
     		columnCfgs:  Ext.Array.merge( that.minimum_columns, that.additional_columns )
     	});
     	this.down('#pi_grid_box').add(this.pi_grid);

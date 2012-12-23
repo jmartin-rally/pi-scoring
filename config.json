@@ -4,6 +4,7 @@
     "server": "https://demo01.rallydev.com",
     "sdk": "2.0p5",
     "javascript": [
+        "FormulaDialog.js",
         "App.js"
     ],
     "css": [

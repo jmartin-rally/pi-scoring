@@ -7,25 +7,133 @@
 
     <script type="text/javascript">
         Rally.onReady(function() {
-            /*global console, Ext */
+            Ext.define( 'PXS.ui.dialog.FormulaDialog', {
+            	extend: 'Rally.ui.dialog.Dialog',
+            	requires: [ 'Rally.ui.Button' ],
+            	closable: false,
+            	stateful: false,
+            	formula: null,
+            	config: {
+            		
+            	},
+            	constructor: function(config) {
+            		this.mergeConfig(config);
+            		this.callParent(arguments);
+            		
+            		this.addHeader();
+            		this.addEditor();
+            		this.addFooter();
+            	},
+            	initComponent: function() {
+            		window.dialog = this;
+            		this.callParent(arguments);
+            		this.addEvents([
+                        /**
+                         * @event
+                         * Fired before saving the formula.
+                         * @param formula the formula being saved.  Return false to prevent saving.
+                         */
+                         'beforeformulasave'
+                    ]);
+            	},
+            	addHeader: function() {
+            		this.add( {
+                        xtype: 'component',
+                        html: 'To calculate a value for the items in the grid, enter a formula below.<br/><br/>' +
+                                'Use the format FieldName = FieldA + FieldB',
+                        padding: 10
+                    } );
+            	},
+            	addEditor: function() {
+            		this.add({
+                            padding: 10,
+                            xtype: 'rallytextfield',
+                            fieldLabel: 'Formula',
+                            width: 250,
+                            labelAlign: "top",
+            	            labelPad: 5,
+            	            labelCls: "rui-label",
+                            itemId: 'formula_box'
+                    });
+            	},
+            	addFooter: function() {
+            		this.addDocked({
+                        xtype: 'toolbar',
+                        dock: 'bottom',
+                        layout: {
+                            pack: 'center'
+                        },
+                        ui: 'footer',
+                        itemId: 'footer',
+                        items: [
+                            {
+                                xtype: 'rallybutton',
+                                text: 'Save & Calculate',
+                                handler: function() {
+                                    this._save();
+                                },
+                                scope: this
+                            },
+                            {
+                                xtype: 'rallybutton',
+                                text: 'Cancel',
+                                ui: 'link',
+                                handler: function() {
+                                    this.hide();
+                                },
+                                scope: this
+                            }
+                        ]
+                    });
+            	},
+            	setFormula: function(formula) {
+            		this.formula = formula;
+            		this.down('#formula_box').setValue(this.formula); 
+            	},
+            	_save: function() {
+            		if (this.fireEvent('beforeformulasave', this.formula) !== false) {
+            			console.log("About to save", this.formula);
+            			this.hide();
+            		}
+            	}
+            });            /*global console, Ext */
             Ext.define('CustomApp', {
                 extend: 'Rally.app.App',
                 componentCls: 'app',
                 items: [ 
                     { xtype: 'container', itemId: 'picker_row', defaults: { padding: 5},  layout: { type: 'hbox' }, items: [
             	        { xtype: 'container', itemId: 'type_picker_box' },
-            	        { xtype: 'container', itemId: 'column_picker_box' }
+            	        { xtype: 'container', itemId: 'column_picker_box' },
+                        { xtype: 'container', itemId: 'calculator_box' }
                     ]},
                     { xtype: 'container', itemId: 'pi_grid_box', padding: 5 }
                 ],
+                /*minimum_columns: [ {text: "ID", dataIndex: "FormattedID"}, {text: "Name", dataIndex: "Name", editor: { xtype: "rallytextfield", width: 250 }, flex: 1 } ], */
                 minimum_columns: [ {text: "ID", dataIndex: "FormattedID"}, {text: "Name", dataIndex: "Name", flex: 1 } ],
                 additional_columns: [],
                 calculation_fields: [],
                 type: null,
                 launch: function() {
-                    //Write app code here
+                    this._addCalculator();
                     this._addFieldPicker();
                     this._addTypePicker();
+                },
+                _addCalculator: function() {
+                    var calculator_dialog = Ext.create('PXS.ui.dialog.FormulaDialog', {
+                        width: 400,
+                        title: 'Calculator'
+                    });
+            
+                    var calculator = Ext.create('Rally.ui.Button', {
+                        text: 'Define Calculator',
+                        listeners: {
+                            click: function( button, event, options ) {
+                                calculator_dialog.setFormula("Fred");
+                                calculator_dialog.show();
+                            }
+                        }
+                    });
+                    this.down('#calculator_box').add(calculator);
                 },
                 _addFieldPicker: function() {
                     var that = this;
@@ -109,6 +217,9 @@
                 	this.pi_grid = Ext.create('Rally.ui.grid.Grid', {
                 		store: that.pi_store,
                         model: 'PortfolioItem/Feature',
+                        enableEditing: true,
+                        plugins: Ext.create( 'Rally.ui.grid.plugin.CellEditing', {}),
+                            
                 		columnCfgs:  Ext.Array.merge( that.minimum_columns, that.additional_columns )
                 	});
                 	this.down('#pi_grid_box').add(this.pi_grid);
