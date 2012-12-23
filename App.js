@@ -3,19 +3,61 @@ Ext.define('CustomApp', {
     extend: 'Rally.app.App',
     componentCls: 'app',
     items: [ 
-        { xtype: 'container', itemId: 'picker_row', padding: 5, layout: { type: 'hbox' }, items: [
+        { xtype: 'container', itemId: 'picker_row', defaults: { padding: 5},  layout: { type: 'hbox' }, items: [
 	        { xtype: 'container', itemId: 'type_picker_box' },
 	        { xtype: 'container', itemId: 'column_picker_box' }
         ]},
         { xtype: 'container', itemId: 'pi_grid_box', padding: 5 }
     ],
-    minimum_display_fields: [ 'FormattedID', 'Name' ],
-    additional_display_fields: [ 'RiskScore' ],
+    minimum_columns: [ {text: "ID", dataIndex: "FormattedID"}, {text: "Name", dataIndex: "Name", flex: 1 } ],
+    additional_columns: [],
     calculation_fields: [],
     type: null,
     launch: function() {
         //Write app code here
+        this._addFieldPicker();
         this._addTypePicker();
+    },
+    _addFieldPicker: function() {
+        var that = this;
+        var picker = Ext.create('Rally.ui.picker.FieldPicker', {
+            modelType: "PortfolioItem",
+            fieldLabel: "Columns",
+            labelSeparator: "",
+            labelWidth: 45,
+            labelPad: 5,
+            labelCls: "rui-label",
+            stateEvents: ['selectionchange' ],
+            stateful: true,
+            stateId: 'pi-score-columns',
+            fieldWhiteList: ["ActualStartDate", "ActualEndDate", "PlannedStartDate", "PlannedEndDate", "PercentDoneByStoryCount", "PercentDoneByStoryPlanEstimate", "InvestmentCategory","RiskScore", "ValueScore"],
+            listeners: {
+                change: function(picker, newValue, oldValue ) {
+                    console.log( "change", picker.getValue, newValue );
+                },
+                selectionchange: function( picker, values, options ) {
+                    console.log( "selectionchange", picker.getValue(), values );
+                    that._setAdditionalColumns(values);
+                    that._getPortfolioItems();
+                }
+            },
+            getState: function() {
+                return { value: this.getValue() };
+            },
+            applyState: function(state) {
+                that._setAdditionalColumns(state.value);
+                this.setValue(state.value);
+            }
+        });  
+        this.down('#column_picker_box').add(picker);
+    },
+    _setAdditionalColumns: function( values ) {
+        var that = this;
+        that.additional_columns = [];
+        Ext.Array.each( values, function(value) {
+            that.additional_columns.push( {text: value.displayName, dataIndex: value.name});
+        });
+        return true;
     },
     _addTypePicker: function() {
         var picker = Ext.create('Rally.ui.combobox.PortfolioItemTypeComboBox', {
@@ -41,8 +83,15 @@ Ext.define('CustomApp', {
     			},
     			scope: this
     		},
-    		fetch: Ext.Array.merge( that.minimum_display_fields, that.additional_display_fields, that.calculation_fields )
+    		fetch: that._getFetchFields()
     	});
+    },
+    _getFetchFields: function() {
+        var fields = [];
+        var cols = Ext.Array.merge( this.minimum_columns, this.additional_columns );
+        Ext.Array.each( cols, function( col ) {
+            fields.push( col.name );
+        });
     },
     _showGrid: function() {
     	console.log( "_showGrid");
@@ -51,11 +100,7 @@ Ext.define('CustomApp', {
     	this.pi_grid = Ext.create('Rally.ui.grid.Grid', {
     		store: that.pi_store,
             model: 'PortfolioItem/Feature',
-    		columnCfgs:  [
-                {text: "ID", dataIndex: "FormattedID"},
-                {text: "Name", dataIndex: "Name", flex: 1 },
-                {text: "Risk", dataIndex: "RiskScore" }
-                ]
+    		columnCfgs:  Ext.Array.merge( that.minimum_columns, that.additional_columns )
     	});
     	this.down('#pi_grid_box').add(this.pi_grid);
 //        var records = this.pi_store.getRecords();
