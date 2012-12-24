@@ -18,6 +18,7 @@ Ext.define('CustomApp', {
     formula_utilities: new FormulaUtilities(),
     launch: function() {
         console.log("Settings", this.settings );
+        this.wait = new Ext.LoadMask( this, {msg: "Loading data..." } );
         this._addCalculator();
         this._addFieldPicker();
         this._addTypePicker();
@@ -36,7 +37,7 @@ Ext.define('CustomApp', {
                     }
                     if ( this.calculation_fields.length > 0 ) {
 	                    var target_field = this.calculation_fields[0];
-	                    
+                        this.wait.show();
 				        this.pi_store = Ext.create('Rally.data.WsapiDataStore', {
 				            autoLoad: true,
 				            model: that.type,
@@ -128,6 +129,7 @@ Ext.define('CustomApp', {
     _getPortfolioItems: function() {
     	console.log( "_getPortfolioItems" );
         var that = this;
+        this.wait.show();
     	this.pi_store = Ext.create('Rally.data.WsapiDataStore', {
     		autoLoad: true,
     		model: that.type,
@@ -154,6 +156,7 @@ Ext.define('CustomApp', {
     _showGrid: function() {
     	console.log( "_showGrid");
     	var that = this;
+        this.wait.show();
     	if ( this.pi_grid ) { this.pi_grid.destroy(); }
     	this.pi_grid = Ext.create('Rally.ui.grid.Grid', {
     		store: that.pi_store,
@@ -164,6 +167,7 @@ Ext.define('CustomApp', {
     		columnCfgs:  Ext.Array.merge( that.minimum_columns, that.additional_columns )
     	});
     	this.down('#pi_grid_box').add(this.pi_grid);
+        this.wait.hide();
 //        var records = this.pi_store.getRecords();
 //        Ext.Array.each( records, function(record) { 
 //            record.set("RiskScore", 6);
