@@ -7,7 +7,74 @@
 
     <script type="text/javascript">
         Rally.onReady(function() {
-            /*global console, Ext */
+            var FormulaUtilities = function(formula) {
+            	this.setFormula = function(formula) {
+            		if ( formula && formula !== null ) {
+            			formula = formula.replace(/\s/g,"");
+            			if ( this.formula === "" ) { 
+            				formula = null; 
+            			} else if ( formula.replace( /\W/g,"" ) === "" ) { 
+            				formula = null; 
+            			} 
+            		} else {
+            			formula = null;
+            		}
+            		this.formula = formula;
+            	};
+            	
+            	this.getFieldNames = function() {
+            		var name_array = [];
+            		
+            		if ( this.formula !== null ) {
+            			name_array = this.formula.split(/\W/);
+            			// check for one-sided =
+            			if ( name_array[name_array.length - 1] == '' ) { 
+            				name_array.pop(); 
+            			}
+            			if ( name_array[0] == '' ) {
+            				name_array = [];
+            			}
+            			// force to an array
+            			if ( typeof(name_array) === "string" ) { name_array = [ name_array ]; }
+            		}
+            		return name_array;
+            	};
+            	
+            	this.getParsedFormula = function( record ) {
+            		var result = null;
+            		var field_names = this.getFieldNames();
+            		if ( field_names && field_names.length > 1 ) {
+            			result = this.formula.replace(/.*=/,"");
+            			for ( var i=0;i<field_names.length;i++ ) {
+            				var field_name = field_names[i];
+            				if ( record[field_name] !== null && typeof(record[field_name]) !== "undefined" ) {
+            					var value = record[field_name];
+            					if ( typeof(value) == "string" ) { value = 0; }
+            					result = result.replace( field_name, value );
+            				} else {
+            					// not really a field name
+            					if ( typeof( parseFloat( field_name, 10 )) == "float" ) { value = field_name; }
+            				}
+            			}
+            		}
+            		return result;
+            	};
+            	
+            	this.calculate = function( record ) {
+            		var parsed_formula = this.getParsedFormula(record);
+            		
+            		var value = null;
+            		try {
+            			var value = eval(parsed_formula);
+            		} catch(e) {
+            			console.log( "Couldn't evaluate ", parsed_formula, " (", e.message, ")");
+            		}
+            		return value;
+            	};
+            	// -- START HERE --
+            	this.formula = null;
+            	this.setFormula(formula);
+            }            /*global console, Ext */
             /*
              * 
              * Pass in app as a config object so we can save from the dialog
@@ -44,7 +111,15 @@
                          * @param formula the formula being saved.  Return false to prevent saving.
                          */
                          'beforeformulasave'
-                    ]);
+                    ],
+                    [
+                     /**
+                      * @event
+                      * Fired after saving the formula.
+                      * @param formula the formula being saved. 
+                      */
+                      'afterformulasave'
+                 ]);
             	},
             	addHeader: function() {
             		this.add( {
@@ -108,6 +183,8 @@
             			} else {
             				console.log( "No app provided in dialog creation" );
             			}
+            			this.fireEvent('afterformulasave', this.formula);
+            			
             			this.hide();
             		}
             	}
@@ -128,6 +205,7 @@
                 additional_columns: [],
                 calculation_fields: [],
                 type: null,
+                formula_utilities: new FormulaUtilities(),
                 launch: function() {
                     console.log("Settings", this.settings );
                     this._addCalculator();
@@ -138,7 +216,40 @@
                     var calculator_dialog = Ext.create('PXS.ui.dialog.FormulaDialog', {
                         width: 400,
                         title: 'Calculator',
-                        app: this
+                        app: this,
+                        listeners: {
+                            afterformulasave: function(formula) {
+                                var that = this;
+                                this.formula_utilities.setFormula(formula);
+                                if ( this.calculation_fields !== this.formula_utilities.getFieldNames() ) {
+                                    this.calculation_fields = this.formula_utilities.getFieldNames();
+                                }
+                                if ( this.calculation_fields.length > 0 ) {
+            	                    var target_field = this.calculation_fields[0];
+            	                    
+            				        this.pi_store = Ext.create('Rally.data.WsapiDataStore', {
+            				            autoLoad: true,
+            				            model: that.type,
+            				            listeners: {
+            				                load: function(store,data,success) {
+                                                that._showGrid();
+            				                    Ext.Array.each( data, function(record) {
+                                                    var newValue = that.formula_utilities.calculate(record.getData());
+            	                                    console.log( record.getData().FormattedID );
+                                                    console.log( newValue );
+            	                                    record.set(target_field, newValue );
+                                                    record.save();
+            				                    });
+            				                },
+            				                scope: this
+            				            },
+            				            fetch: that._getFetchFields()
+            				        });
+                                }
+                                
+                            },
+                            scope: this
+                        }
                     });
             
                     var calculator = Ext.create('Rally.ui.Button', {
@@ -223,8 +334,12 @@
                     var fields = [];
                     var cols = Ext.Array.merge( this.minimum_columns, this.additional_columns );
                     Ext.Array.each( cols, function( col ) {
-                        fields.push( col.name );
+                        fields.push( col.dataIndex );
                     });
+                    console.log( fields );
+                    fields = Ext.Array.merge( fields, this.calculation_fields );
+                    return fields;
+                    
                 },
                 _showGrid: function() {
                 	console.log( "_showGrid");

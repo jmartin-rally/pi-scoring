@@ -35,7 +35,15 @@ Ext.define( 'PXS.ui.dialog.FormulaDialog', {
              * @param formula the formula being saved.  Return false to prevent saving.
              */
              'beforeformulasave'
-        ]);
+        ],
+        [
+         /**
+          * @event
+          * Fired after saving the formula.
+          * @param formula the formula being saved. 
+          */
+          'afterformulasave'
+     ]);
 	},
 	addHeader: function() {
 		this.add( {
@@ -99,6 +107,8 @@ Ext.define( 'PXS.ui.dialog.FormulaDialog', {
 			} else {
 				console.log( "No app provided in dialog creation" );
 			}
+			this.fireEvent('afterformulasave', this.formula);
+			
 			this.hide();
 		}
 	}

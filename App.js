@@ -15,6 +15,7 @@ Ext.define('CustomApp', {
     additional_columns: [],
     calculation_fields: [],
     type: null,
+    formula_utilities: new FormulaUtilities(),
     launch: function() {
         console.log("Settings", this.settings );
         this._addCalculator();
@@ -25,7 +26,40 @@ Ext.define('CustomApp', {
         var calculator_dialog = Ext.create('PXS.ui.dialog.FormulaDialog', {
             width: 400,
             title: 'Calculator',
-            app: this
+            app: this,
+            listeners: {
+                afterformulasave: function(formula) {
+                    var that = this;
+                    this.formula_utilities.setFormula(formula);
+                    if ( this.calculation_fields !== this.formula_utilities.getFieldNames() ) {
+                        this.calculation_fields = this.formula_utilities.getFieldNames();
+                    }
+                    if ( this.calculation_fields.length > 0 ) {
+	                    var target_field = this.calculation_fields[0];
+	                    
+				        this.pi_store = Ext.create('Rally.data.WsapiDataStore', {
+				            autoLoad: true,
+				            model: that.type,
+				            listeners: {
+				                load: function(store,data,success) {
+                                    that._showGrid();
+				                    Ext.Array.each( data, function(record) {
+                                        var newValue = that.formula_utilities.calculate(record.getData());
+	                                    console.log( record.getData().FormattedID );
+                                        console.log( newValue );
+	                                    record.set(target_field, newValue );
+                                        record.save();
+				                    });
+				                },
+				                scope: this
+				            },
+				            fetch: that._getFetchFields()
+				        });
+                    }
+                    
+                },
+                scope: this
+            }
         });
 
         var calculator = Ext.create('Rally.ui.Button', {
@@ -110,8 +144,12 @@ Ext.define('CustomApp', {
         var fields = [];
         var cols = Ext.Array.merge( this.minimum_columns, this.additional_columns );
         Ext.Array.each( cols, function( col ) {
-            fields.push( col.name );
+            fields.push( col.dataIndex );
         });
+        console.log( fields );
+        fields = Ext.Array.merge( fields, this.calculation_fields );
+        return fields;
+        
     },
     _showGrid: function() {
     	console.log( "_showGrid");
