@@ -43,15 +43,18 @@
             		
             		if ( this.formula !== null ) {
             			name_array = this.formula.split(/[\W]/);
-            			// check for one-sided =
-            			if ( name_array[name_array.length - 1] == '' ) { 
-            				name_array.pop(); 
-            			}
-            			if ( name_array[0] == '' ) {
-            				name_array = [];
-            			}
-            			// force to an array
-            			if ( typeof(name_array) === "string" ) { name_array = [ name_array ]; }
+            		}
+            		return cleanArray(name_array);
+            	};
+            	
+            	/* 
+            	 * need to get fields differently than fields that are fetched 
+            	 * so that replacement works well.
+            	 */
+            	this.getFieldReplacementNames = function() {
+            		var name_array = [];
+            		if ( this.formula !== null ) {
+            			name_array = this.formula.split(/[^\w|\.]/);
             		}
             		return cleanArray(name_array);
             	};
@@ -59,22 +62,40 @@
             	this.getParsedFormula = function( record ) {
             		var result = null;
             		record_under_test = record;
-            		var field_names = this.getFieldNames();
+            		var field_names = this.getFieldReplacementNames();
             		if ( field_names && field_names.length > 1 ) {
             			result = this.formula.replace(/.*=/,"");
-            			for ( var i=0;i<field_names.length;i++ ) {
+            			for ( var i=1;i<field_names.length;i++ ) {
             				var field_name = field_names[i];
             				if ( record[field_name] !== null && typeof(record[field_name]) !== "undefined" ) {
             					var value = record[field_name];
             					if ( typeof(value) == "string" ) { value = 0; }
+            					var re = new RegExp(field_name + "(?!')");
+            					result = result.replace( re, value );
+            				} else if ( /\./.test(field_name) ) {
+            					var nested_name = this.getNestedFieldName( field_name );
+            					var value = 0;
+            					try {
+            						value = eval( "record" + nested_name ) || 0;
+            					} catch(e) {
+            						window.console &&  console.log( "Using a 0 because evaluating gave: " + e.message + " (" + nested_name + ")");
+            					}
+            						
             					result = result.replace( field_name, value );
-            				} else {
+            				} else  {
             					// not really a field name
             					if ( typeof( parseFloat( field_name, 10 )) == "float" ) { value = field_name; }
             				}
             			}
             		}
             		return result;
+            	};
+            	
+            	this.getNestedFieldName = function(name) {
+            		var field_array = name.split(/\./);
+            		var field_name = "['" + field_array.join("']['") + "']";
+            		
+            		return field_name;
             	};
             	
             	this.calculate = function( record ) {
@@ -84,14 +105,23 @@
             		try {
             			var value = eval(parsed_formula);
             		} catch(e) {
-            			console.log( "Couldn't evaluate ", parsed_formula, " (", e.message, ")");
+            			window.console && console.log( "Couldn't evaluate ", parsed_formula, " (", e.message, ")");
             		}
             		return value;
             	};
             	
-            
             	var cleanArray = function( an_array ) {
-            		var new_array = [];
+            		var name_array = [];
+            		// check for one-sided =
+            		if ( an_array[name_array.length - 1] == '' ) { 
+            			an_array.pop(); 
+            		}
+            		if ( an_array[0] == '' ) {
+            			an_array = [];
+            		}
+            		// force to an array
+            		if ( typeof(an_array) === "string" ) { an_array = [ an_array ]; }
+            		
             		for ( var i=0; i<an_array.length; i++ ) {
             			var item = an_array[i];
             			if ( item === "hasTag" ) {
@@ -101,11 +131,11 @@
             				item = '';
             			}
             			if ( item !== '' ) {
-            				new_array.push(item);
+            				name_array.push(item);
             			}
             		}
             		
-            		return new_array;
+            		return name_array;
             	};
             	// -- START HERE --
             	this.formula = null;
@@ -164,6 +194,7 @@
                                 'Use the format FieldName = FieldA + FieldB<br/><br/>' + 
                                 'Special formula:<ul>' +
                                 '<li>hasTag("myTag") ? 1:0  will be 1 if the item has the tag and 0 if not</li>' +
+                                '<li>Parent.RiskScore will give the Risk Score of the parent (dot notation works to 1 level)</li>' +
                                 '</ul>',
                         padding: 10
                     } );
@@ -216,11 +247,10 @@
             	},
             	_save: function() {
             		if (this.fireEvent('beforeformulasave', this.formula) !== false) {
-            			console.log("About to save", this.formula);
             			if ( this.app ) {
             		        this.app.updateSettingsValues( { settings: { Formula: this.formula } });
             			} else {
-            				console.log( "No app provided in dialog creation" );
+            				window.console && console.log( "No app provided in dialog creation" );
             			}
             			this.fireEvent('afterformulasave', this.formula);
             			
@@ -246,7 +276,6 @@
                 type: null,
                 formula_utilities: new FormulaUtilities(),
                 launch: function() {
-                    console.log("Settings", this.settings );
                     this.wait = new Ext.LoadMask( this, {msg: "Loading data..." } );
                     this._addCalculator();
                     this._addFieldPicker();
@@ -314,11 +343,7 @@
                         stateId: 'pi-score-columns',
                         fieldWhiteList: ["ActualStartDate", "ActualEndDate", "PlannedStartDate", "PlannedEndDate", "PercentDoneByStoryCount", "PercentDoneByStoryPlanEstimate", "InvestmentCategory","RiskScore", "ValueScore"],
                         listeners: {
-                            change: function(picker, newValue, oldValue ) {
-                                console.log( "change", picker.getValue, newValue );
-                            },
                             selectionchange: function( picker, values, options ) {
-                                console.log( "selectionchange", picker.getValue(), values );
                                 that._setAdditionalColumns(values);
                                 that._getPortfolioItems();
                             }
@@ -354,7 +379,6 @@
                     this.down('#type_picker_box').add(picker);
                 },
                 _getPortfolioItems: function() {
-                	console.log( "_getPortfolioItems" );
                     var that = this;
                     this.wait.show();
                 	this.pi_store = Ext.create('Rally.data.WsapiDataStore', {
@@ -375,13 +399,11 @@
                     Ext.Array.each( cols, function( col ) {
                         fields.push( col.dataIndex );
                     });
-                    console.log( fields );
                     fields = Ext.Array.merge( fields, this.calculation_fields );
                     return fields;
                     
                 },
                 _showGrid: function() {
-                	console.log( "_showGrid");
                 	var that = this;
                     this.wait.show();
                 	if ( this.pi_grid ) { this.pi_grid.destroy(); }

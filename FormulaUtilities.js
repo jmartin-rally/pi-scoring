@@ -34,15 +34,18 @@ var FormulaUtilities = function(formula) {
 		
 		if ( this.formula !== null ) {
 			name_array = this.formula.split(/[\W]/);
-			// check for one-sided =
-			if ( name_array[name_array.length - 1] == '' ) { 
-				name_array.pop(); 
-			}
-			if ( name_array[0] == '' ) {
-				name_array = [];
-			}
-			// force to an array
-			if ( typeof(name_array) === "string" ) { name_array = [ name_array ]; }
+		}
+		return cleanArray(name_array);
+	};
+	
+	/* 
+	 * need to get fields differently than fields that are fetched 
+	 * so that replacement works well.
+	 */
+	this.getFieldReplacementNames = function() {
+		var name_array = [];
+		if ( this.formula !== null ) {
+			name_array = this.formula.split(/[^\w|\.]/);
 		}
 		return cleanArray(name_array);
 	};
@@ -50,23 +53,40 @@ var FormulaUtilities = function(formula) {
 	this.getParsedFormula = function( record ) {
 		var result = null;
 		record_under_test = record;
-		var field_names = this.getFieldNames();
+		var field_names = this.getFieldReplacementNames();
 		if ( field_names && field_names.length > 1 ) {
 			result = this.formula.replace(/.*=/,"");
-			for ( var i=0;i<field_names.length;i++ ) {
+			for ( var i=1;i<field_names.length;i++ ) {
 				var field_name = field_names[i];
 				if ( record[field_name] !== null && typeof(record[field_name]) !== "undefined" ) {
-					console.log( field_name, typeof(record[field_name]) );
 					var value = record[field_name];
 					if ( typeof(value) == "string" ) { value = 0; }
+					var re = new RegExp(field_name + "(?!')");
+					result = result.replace( re, value );
+				} else if ( /\./.test(field_name) ) {
+					var nested_name = this.getNestedFieldName( field_name );
+					var value = 0;
+					try {
+						value = eval( "record" + nested_name ) || 0;
+					} catch(e) {
+						window.console &&  console.log( "Using a 0 because evaluating gave: " + e.message + " (" + nested_name + ")");
+					}
+						
 					result = result.replace( field_name, value );
-				} else {
+				} else  {
 					// not really a field name
 					if ( typeof( parseFloat( field_name, 10 )) == "float" ) { value = field_name; }
 				}
 			}
 		}
 		return result;
+	};
+	
+	this.getNestedFieldName = function(name) {
+		var field_array = name.split(/\./);
+		var field_name = "['" + field_array.join("']['") + "']";
+		
+		return field_name;
 	};
 	
 	this.calculate = function( record ) {
@@ -76,13 +96,23 @@ var FormulaUtilities = function(formula) {
 		try {
 			var value = eval(parsed_formula);
 		} catch(e) {
-			console.log( "Couldn't evaluate ", parsed_formula, " (", e.message, ")");
+			window.console && console.log( "Couldn't evaluate ", parsed_formula, " (", e.message, ")");
 		}
 		return value;
 	};
 	
 	var cleanArray = function( an_array ) {
-		var new_array = [];
+		var name_array = [];
+		// check for one-sided =
+		if ( an_array[name_array.length - 1] == '' ) { 
+			an_array.pop(); 
+		}
+		if ( an_array[0] == '' ) {
+			an_array = [];
+		}
+		// force to an array
+		if ( typeof(an_array) === "string" ) { an_array = [ an_array ]; }
+		
 		for ( var i=0; i<an_array.length; i++ ) {
 			var item = an_array[i];
 			if ( item === "hasTag" ) {
@@ -92,11 +122,11 @@ var FormulaUtilities = function(formula) {
 				item = '';
 			}
 			if ( item !== '' ) {
-				new_array.push(item);
+				name_array.push(item);
 			}
 		}
 		
-		return new_array;
+		return name_array;
 	};
 	// -- START HERE --
 	this.formula = null;

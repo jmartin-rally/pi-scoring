@@ -52,6 +52,7 @@ Ext.define( 'PXS.ui.dialog.FormulaDialog', {
                     'Use the format FieldName = FieldA + FieldB<br/><br/>' + 
                     'Special formula:<ul>' +
                     '<li>hasTag("myTag") ? 1:0  will be 1 if the item has the tag and 0 if not</li>' +
+                    '<li>Parent.RiskScore will give the Risk Score of the parent (dot notation works to 1 level)</li>' +
                     '</ul>',
             padding: 10
         } );
@@ -104,11 +105,10 @@ Ext.define( 'PXS.ui.dialog.FormulaDialog', {
 	},
 	_save: function() {
 		if (this.fireEvent('beforeformulasave', this.formula) !== false) {
-			console.log("About to save", this.formula);
 			if ( this.app ) {
 		        this.app.updateSettingsValues( { settings: { Formula: this.formula } });
 			} else {
-				console.log( "No app provided in dialog creation" );
+				window.console && console.log( "No app provided in dialog creation" );
 			}
 			this.fireEvent('afterformulasave', this.formula);
 			

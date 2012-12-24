@@ -18,8 +18,22 @@ describe("ParserCalculateTests", function() {
 		
 		object_with_parent = {
 				int_field: 10,
+				other_field: 20,
 				Parent: { int_field: 5 }
 		};
+		
+		object_with_deep_parentage = {
+				other_field: 10,
+				Parent: {
+					int_field: 5,
+					Parent: {
+						int_field: 2,
+						Parent: {
+							int_field: 1
+						}
+					}
+				}
+		}
 	});
 	
 	it("should return null if no fields", function() {
@@ -107,5 +121,25 @@ describe("ParserCalculateTests", function() {
     it("should return a value when using related records", function() {
     	parser.setFormula( 'newField = Parent.int_field');
     	expect(parser.calculate(object_with_parent)).toEqual(5);
+    	
+    	parser.setFormula( 'newField = Parent.int_field + other_field');
+    	expect(parser.calculate(object_with_parent)).toEqual(25);
+    	
+    	parser.setFormula( 'newField = Parent.Parent.Parent.int_field + other_field');
+    	expect(parser.calculate(object_with_deep_parentage)).toEqual(11);
     });
+    
+    it("should return a value when using related records even if related record does not exist", function() {
+    	parser.setFormula( 'newField = Parent.int_field + float_field');
+    	expect(parser.calculate(simple_object)).toEqual(1.5);    	
+    });
+
+    it("should not matter order of fields when using related records", function() {
+    	parser.setFormula( 'newField = Parent.int_field + int_field');
+    	expect(parser.calculate(object_with_parent)).toEqual(15);
+    	
+    	parser.setFormula( 'newField = int_field + Parent.int_field');
+    	expect(parser.calculate(object_with_parent)).toEqual(15);
+    });
+    
 });
