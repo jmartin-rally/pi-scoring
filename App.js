@@ -46,8 +46,6 @@ Ext.define('CustomApp', {
                                     that._showGrid();
 				                    Ext.Array.each( data, function(record) {
                                         var newValue = that.formula_utilities.calculate(record.getData());
-	                                    console.log( record.getData().FormattedID );
-                                        console.log( newValue );
 	                                    record.set(target_field, newValue );
                                         record.save();
 				                    });

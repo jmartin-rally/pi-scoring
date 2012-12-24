@@ -10,6 +10,11 @@ describe("ParserCalculateTests", function() {
 			float_field: 1.5,
 			string_field: "I'm a string"
 		};
+		
+		object_with_tags = {
+				int_field:10,
+				Tags: [ { Name: "tubby" }, { Name: "grendel" } ]
+		}
 	});
 	
 	it("should return null if no fields", function() {
@@ -71,4 +76,26 @@ describe("ParserCalculateTests", function() {
     	expect(parser.calculate(simple_object)).toEqual(60);
     	
     });
+    
+    it("should return a value for hasTag() ", function() {
+    	parser.setFormula( 'newField = hasTag( "grendel" )' );
+    	expect(parser.getParsedFormula(object_with_tags)).toEqual('hasTag("grendel")');
+    	expect(parser.calculate(object_with_tags)).toEqual( true );
+    	
+    	parser.setFormula( 'newField = hasTag( "bubble" )');
+    	expect(parser.calculate(object_with_tags)).toEqual(false);
+    	
+    	parser.setFormula( 'newField = hasTag( "bubble" )');
+    	expect(parser.calculate(object_with_tags)).toEqual(false);
+    	
+    	expect(parser.calculate(simple_object)).toEqual(false);
+    	
+    	parser.setFormula( 'newField = hasTag( "grendel" ) ? 1:0 ');
+    	expect(parser.calculate(simple_object)).toEqual(0);
+    	expect(parser.calculate(object_with_tags)).toEqual(1);
+    	
+    	parser.setFormula( 'newField = ( hasTag("grendel") ? 1:0 ) * int_field');
+    	expect(parser.calculate(simple_object)).toEqual(0);
+    	expect(parser.calculate(object_with_tags)).toEqual(10);
+	});
 });

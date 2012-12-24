@@ -49,7 +49,10 @@ Ext.define( 'PXS.ui.dialog.FormulaDialog', {
 		this.add( {
             xtype: 'component',
             html: 'To calculate a value for the items in the grid, enter a formula below.<br/><br/>' +
-                    'Use the format FieldName = FieldA + FieldB',
+                    'Use the format FieldName = FieldA + FieldB<br/><br/>' + 
+                    'Special formula:<ul>' +
+                    '<li>hasTag("myTag") ? 1:0  will be 1 if the item has the tag and 0 if not</li>' +
+                    '</ul>',
             padding: 10
         } );
 	},
@@ -58,7 +61,7 @@ Ext.define( 'PXS.ui.dialog.FormulaDialog', {
                 padding: 10,
                 xtype: 'rallytextfield',
                 fieldLabel: 'Formula',
-                width: 250,
+                width: 350,
                 labelAlign: "top",
 	            labelPad: 5,
 	            labelCls: "rui-label",

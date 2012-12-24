@@ -38,4 +38,10 @@ describe("ParserBasicTests", function() {
     	expect(parser.getFieldNames()).toEqual(["fieldA","fieldB","fieldC"]);
     });
     
+    it('should give Tags as a field name if hasTag is invoked', function() {
+    	parser.setFormula( "fieldA = hasTag('grendel') " );
+    	expect(parser.getFieldNames()).toEqual(["fieldA", "Tags", "grendel"]);
+    	
+    });
+    
 });
