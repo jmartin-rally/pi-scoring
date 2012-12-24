@@ -7,9 +7,22 @@
 
     <script type="text/javascript">
         Rally.onReady(function() {
+            // for using during evaluation
+            var hasTag = function( tag_name ) {
+            	var result = false;
+            	if ( record_under_test.Tags ) {
+            		for ( var i=0; i< record_under_test.Tags.length; i++ ) {
+            			if ( record_under_test.Tags[i].Name == tag_name ) {
+            				result = true;
+            			}
+            		}
+            	}
+            	return result;
+            };
+            
+            var record_under_test = null;
+            
             var FormulaUtilities = function(formula) {
-            	
-            	var record_under_test = null;
             	
             	this.setFormula = function(formula) {
             		if ( formula && formula !== null ) {
@@ -29,7 +42,7 @@
             		var name_array = [];
             		
             		if ( this.formula !== null ) {
-            			name_array = this.formula.split(/\W/);
+            			name_array = this.formula.split(/[\W]/);
             			// check for one-sided =
             			if ( name_array[name_array.length - 1] == '' ) { 
             				name_array.pop(); 
@@ -40,7 +53,7 @@
             			// force to an array
             			if ( typeof(name_array) === "string" ) { name_array = [ name_array ]; }
             		}
-            		return name_array;
+            		return cleanArray(name_array);
             	};
             	
             	this.getParsedFormula = function( record ) {
@@ -76,17 +89,23 @@
             		return value;
             	};
             	
-            	// for using during evaluation
-            	var hasTag = function( tag_name ) {
-            		var result = false;
-            		if ( record_under_test.Tags ) {
-            			for ( var i=0; i< record_under_test.Tags.length; i++ ) {
-            				if ( record_under_test.Tags[i].Name == tag_name ) {
-            					result = true;
-            				}
+            
+            	var cleanArray = function( an_array ) {
+            		var new_array = [];
+            		for ( var i=0; i<an_array.length; i++ ) {
+            			var item = an_array[i];
+            			if ( item === "hasTag" ) {
+            				item = "Tags";
+            			}
+            			if ( /['|"]/.test(item) ) {
+            				item = '';
+            			}
+            			if ( item !== '' ) {
+            				new_array.push(item);
             			}
             		}
-            		return result;
+            		
+            		return new_array;
             	};
             	// -- START HERE --
             	this.formula = null;
@@ -142,7 +161,10 @@
             		this.add( {
                         xtype: 'component',
                         html: 'To calculate a value for the items in the grid, enter a formula below.<br/><br/>' +
-                                'Use the format FieldName = FieldA + FieldB',
+                                'Use the format FieldName = FieldA + FieldB<br/><br/>' + 
+                                'Special formula:<ul>' +
+                                '<li>hasTag("myTag") ? 1:0  will be 1 if the item has the tag and 0 if not</li>' +
+                                '</ul>',
                         padding: 10
                     } );
             	},
@@ -151,7 +173,7 @@
                             padding: 10,
                             xtype: 'rallytextfield',
                             fieldLabel: 'Formula',
-                            width: 250,
+                            width: 350,
                             labelAlign: "top",
             	            labelPad: 5,
             	            labelCls: "rui-label",
@@ -253,9 +275,6 @@
                                                 that._showGrid();
             				                    Ext.Array.each( data, function(record) {
                                                     var newValue = that.formula_utilities.calculate(record.getData());
-            	                                    console.log( record.getData().FormattedID );
-                                                    console.log(record.getData());
-                                                    console.log( newValue );
             	                                    record.set(target_field, newValue );
                                                     record.save();
             				                    });
