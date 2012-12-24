@@ -56,6 +56,7 @@ var FormulaUtilities = function(formula) {
 			for ( var i=0;i<field_names.length;i++ ) {
 				var field_name = field_names[i];
 				if ( record[field_name] !== null && typeof(record[field_name]) !== "undefined" ) {
+					console.log( field_name, typeof(record[field_name]) );
 					var value = record[field_name];
 					if ( typeof(value) == "string" ) { value = 0; }
 					result = result.replace( field_name, value );
@@ -80,7 +81,6 @@ var FormulaUtilities = function(formula) {
 		return value;
 	};
 	
-
 	var cleanArray = function( an_array ) {
 		var new_array = [];
 		for ( var i=0; i<an_array.length; i++ ) {

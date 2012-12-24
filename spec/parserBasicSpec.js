@@ -38,6 +38,12 @@ describe("ParserBasicTests", function() {
     	expect(parser.getFieldNames()).toEqual(["fieldA","fieldB","fieldC"]);
     });
     
+    it('should give item and its field when dot notation is provided', function() {
+    	parser.setFormula( "fieldA = fieldB.fieldC " );
+    	expect(parser.getFieldNames()).toEqual(["fieldA", "fieldB", "fieldC"]);
+    	
+    });
+    
     it('should give Tags as a field name if hasTag is invoked', function() {
     	parser.setFormula( "fieldA = hasTag('grendel') " );
     	expect(parser.getFieldNames()).toEqual(["fieldA", "Tags", "grendel"]);

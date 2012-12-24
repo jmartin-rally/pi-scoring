@@ -14,7 +14,12 @@ describe("ParserCalculateTests", function() {
 		object_with_tags = {
 				int_field:10,
 				Tags: [ { Name: "tubby" }, { Name: "grendel" } ]
-		}
+		};
+		
+		object_with_parent = {
+				int_field: 10,
+				Parent: { int_field: 5 }
+		};
 	});
 	
 	it("should return null if no fields", function() {
@@ -98,4 +103,9 @@ describe("ParserCalculateTests", function() {
     	expect(parser.calculate(simple_object)).toEqual(0);
     	expect(parser.calculate(object_with_tags)).toEqual(10);
 	});
+    
+    it("should return a value when using related records", function() {
+    	parser.setFormula( 'newField = Parent.int_field');
+    	expect(parser.calculate(object_with_parent)).toEqual(5);
+    });
 });
