@@ -1,4 +1,8 @@
-// for using during evaluation
+/*
+ * DEFINE some functions that can be used in the formulas
+ * 
+ */
+
 var hasTag = function( tag_name ) {
 	var result = false;
 	if ( record_under_test.Tags ) {
@@ -11,8 +15,24 @@ var hasTag = function( tag_name ) {
 	return result;
 };
 
+var applyMap = function( variable, hash ) {
+	var result = hash['Default'] || hash['default'] || 0;
+	if ( record_under_test[variable] ) {
+		window.console && console.log( "..verified record has this field", variable, record_under_test[variable]);
+		if ( hash.hasOwnProperty( record_under_test[variable] )) {
+			window.console && console.log( "..and the value is in the hash", hash[record_under_test[variable]]);
+			result = hash[record_under_test[variable]];
+		}
+	}
+	return result;
+}
+
 var record_under_test = null;
 
+/*
+ * utilities for interacting with via writing a formula
+ * 
+ */
 var FormulaUtilities = function(formula) {
 	
 	this.setFormula = function(formula) {
@@ -55,7 +75,7 @@ var FormulaUtilities = function(formula) {
 		record_under_test = record;
 		var field_names = this.getFieldReplacementNames();
 		if ( field_names && field_names.length > 1 ) {
-			result = this.formula.replace(/.*=/,"");
+			result = this.formula.replace(/.+?=/,"");
 			for ( var i=1;i<field_names.length;i++ ) {
 				var field_name = field_names[i];
 				if ( record[field_name] !== null && typeof(record[field_name]) !== "undefined" ) {

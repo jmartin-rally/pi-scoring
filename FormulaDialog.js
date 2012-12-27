@@ -53,6 +53,7 @@ Ext.define( 'PXS.ui.dialog.FormulaDialog', {
                     'Special formula:<ul>' +
                     '<li>hasTag("myTag") ? 1:0  will be 1 if the item has the tag and 0 if not</li>' +
                     '<li>Parent.RiskScore will give the Risk Score of the parent (dot notation works to 1 level)</li>' +
+                    "<li>applyMap('Priority',{ 'PO':5, 'Default':12, 'P1':2 }) will return a 5 when Priority is PO</li>" +
                     '</ul>',
             padding: 10
         } );

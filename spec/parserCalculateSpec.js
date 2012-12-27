@@ -161,4 +161,33 @@ describe("ParserCalculateTests", function() {
     	parser.setFormula("newField = ( NotAField.replace('a','') || 0 ) * 1 ");
     	expect(parser.calculate(object_with_parent)).toEqual(0);
     });
+    
+    it("should recognize == tests in formula", function() {
+    	//only works if string has some sort of method applied to it. Otherwise,
+    	//the string resolves to 0
+    	var test_object = { Priority: "P0" };
+    	parser.setFormula("newField = ( Priority.toLowerCase() == 'p0' ) ? 5:0");
+    	expect(parser.calculate(test_object)).toEqual(5);
+    });
+
+    it("should apply a map of values to translate a string", function() {
+    	parser.setFormula( "newField = applyMap( 'Priority', {'Default':7, 'P0': 5, 'P1': 3 })");
+    	
+    	var test_object = { Priority: "P1" };
+    	expect(parser.calculate(test_object)).toEqual(3);
+    	
+    	test_object.Priority = "P0";
+    	expect(parser.calculate(test_object)).toEqual(5);
+    	
+    	test_object.Priority = "P3";
+    	expect(parser.calculate(test_object)).toEqual(7);
+    	
+    	parser.setFormula( "newField = applyMap( 'Priority', {'default':7, 'P0': 5, 'P1': 3 })");
+    	expect(parser.calculate(test_object)).toEqual(7);
+
+    	parser.setFormula( "newField = applyMap( 'Priority', {'P0': 5, 'P1': 3 })");
+    	expect(parser.calculate(test_object)).toEqual(0);
+
+    	
+    });
 });
