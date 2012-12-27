@@ -7,7 +7,55 @@
 
     <script type="text/javascript">
         Rally.onReady(function() {
-            // for using during evaluation
+            /**
+             * A Column definition class which renders Rally Tags.  See the {@link Ext.grid.column.Column#xtype xtype}
+             * config option of {@link Ext.grid.column.Column} for more details.
+             *
+             */
+            Ext.define('Ext.grid.column.Tags', {
+                extend: 'Ext.grid.column.Column',
+                alias: ['widget.tagscolumn'],
+                alternateClassName: 'Ext.grid.TagsColumn',
+            
+                /**
+                 * @cfg {String} undefinedText
+                 * The string returned by the renderer when the column value is undefined.
+                 */
+                undefinedText: '&#160;',
+            
+                /**
+                 * @cfg renderer
+                 * @hide
+                 */
+                /**
+                 * @cfg scope
+                 * @hide
+                 */
+            
+                defaultRenderer: function(value){
+                    if (value === undefined) {
+                        return this.undefinedText;
+                    }
+                    
+                    if ( typeof(value) !== "object" ) {
+                    	return this.undefinedText;
+                    }
+                    
+                    if ( value.length < 1 ) {
+                    	return this.undefinedText;
+                    }
+                    
+                    if ( value.length > 0 ) {
+                    	var result_array = [];
+                    	for ( var i=0; i<value.length; i++ ) {
+                    		result_array.push(value[i].Name);
+                    	}
+                    	return result_array.join( ", " );
+                    }
+            
+                    return "?";
+                }
+            });            // for using during evaluation
             var hasTag = function( tag_name ) {
             	var result = false;
             	if ( record_under_test.Tags ) {
@@ -73,15 +121,10 @@
             					var re = new RegExp(field_name + "(?!')");
             					result = result.replace( re, value );
             				} else if ( /\./.test(field_name) ) {
-            					var nested_name = this.getNestedFieldName( field_name );
+            					var nested_value = this.getNestedValue( field_name );
             					var value = 0;
-            					try {
-            						value = eval( "record" + nested_name ) || 0;
-            					} catch(e) {
-            						window.console &&  console.log( "Using a 0 because evaluating gave: " + e.message + " (" + nested_name + ")");
-            					}
-            						
-            					result = result.replace( field_name, value );
+            
+            					result = result.replace( field_name, nested_value );
             				} else  {
             					// not really a field name
             					if ( typeof( parseFloat( field_name, 10 )) == "float" ) { value = field_name; }
@@ -91,21 +134,36 @@
             		return result;
             	};
             	
-            	this.getNestedFieldName = function(name) {
+            	this.getNestedValue = function(name) {
             		var field_array = name.split(/\./);
-            		var field_name = "['" + field_array.join("']['") + "']";
+            		var field_statement = "record_under_test['" + field_array.join("']['") + "']";
+            		var value = "";
+            
+            		if ( typeof(record_under_test[field_array[0]]) == "string" ) {
+            			value = '"' + record_under_test[field_array.shift()] + '".' + field_array.join(".") ;
+            			console.log("I'm a string!", field_statement);
+            		}
             		
-            		return field_name;
+            		if ( value === "" ) {	
+            			try {
+            				window.console && console.log( "evaluating", field_statement);
+            				value = eval( field_statement ) || 0;
+            			} catch(e) {
+            				window.console &&  console.log( "Using a '' because evaluating gave: " + e.message + " (" + field_statement + ")");
+            			}
+            		}
+            		
+            		return value;
             	};
             	
             	this.calculate = function( record ) {
             		var parsed_formula = this.getParsedFormula(record);
-            		
+            		window.console && console.log( "Parsed Formula:", parsed_formula);
             		var value = null;
             		try {
             			var value = eval(parsed_formula);
             		} catch(e) {
-            			window.console && console.log( "Couldn't evaluate ", parsed_formula, " (", e.message, ")");
+            			window.console && console.log( "Returning null because couldn't evaluate ", parsed_formula, " (", e.message, ")");
             		}
             		return value;
             	};
@@ -341,7 +399,7 @@
                         stateEvents: ['selectionchange' ],
                         stateful: true,
                         stateId: 'pi-score-columns',
-                        fieldWhiteList: ["ActualStartDate", "ActualEndDate", "PlannedStartDate", "PlannedEndDate", "PercentDoneByStoryCount", "PercentDoneByStoryPlanEstimate", "InvestmentCategory","RiskScore", "ValueScore"],
+                        fieldWhiteList: ["ActualStartDate", "ActualEndDate", "PlannedStartDate", "PlannedEndDate", "PercentDoneByStoryCount", "PercentDoneByStoryPlanEstimate", "InvestmentCategory","RiskScore", "Tags", "ValueScore"],
                         listeners: {
                             selectionchange: function( picker, values, options ) {
                                 that._setAdditionalColumns(values);
@@ -362,7 +420,17 @@
                     var that = this;
                     that.additional_columns = [];
                     Ext.Array.each( values, function(value) {
-                        that.additional_columns.push( {text: value.displayName, dataIndex: value.name});
+                        console.log( value );
+                        var config = {
+                            text: value.displayName, 
+                            dataIndex: value.name
+                        };
+                        if ( /Date/.test(value.displayName) ) {
+                            config.xtype = 'datecolumn';
+                        } else if ( value.displayName === "Tags" ) {
+                            config.xtype = 'tagscolumn';
+                        }
+                        that.additional_columns.push( config );
                     });
                     return true;
                 },

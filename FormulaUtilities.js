@@ -58,7 +58,6 @@ var FormulaUtilities = function(formula) {
 			result = this.formula.replace(/.*=/,"");
 			for ( var i=1;i<field_names.length;i++ ) {
 				var field_name = field_names[i];
-				console.log("testing field:", field_name);
 				if ( record[field_name] !== null && typeof(record[field_name]) !== "undefined" ) {
 					var value = record[field_name];
 					if ( typeof(value) == "string" ) { value = 0; }
@@ -79,7 +78,6 @@ var FormulaUtilities = function(formula) {
 	};
 	
 	this.getNestedValue = function(name) {
-		console.log( "nested:",name, record_under_test);
 		var field_array = name.split(/\./);
 		var field_statement = "record_under_test['" + field_array.join("']['") + "']";
 		var value = "";
@@ -91,7 +89,7 @@ var FormulaUtilities = function(formula) {
 		
 		if ( value === "" ) {	
 			try {
-				console.log( "evaluating", field_statement);
+				window.console && console.log( "evaluating", field_statement);
 				value = eval( field_statement ) || 0;
 			} catch(e) {
 				window.console &&  console.log( "Using a '' because evaluating gave: " + e.message + " (" + field_statement + ")");
