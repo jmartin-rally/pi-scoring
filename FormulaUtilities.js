@@ -58,21 +58,17 @@ var FormulaUtilities = function(formula) {
 			result = this.formula.replace(/.*=/,"");
 			for ( var i=1;i<field_names.length;i++ ) {
 				var field_name = field_names[i];
+				console.log("testing field:", field_name);
 				if ( record[field_name] !== null && typeof(record[field_name]) !== "undefined" ) {
 					var value = record[field_name];
 					if ( typeof(value) == "string" ) { value = 0; }
 					var re = new RegExp(field_name + "(?!')");
 					result = result.replace( re, value );
 				} else if ( /\./.test(field_name) ) {
-					var nested_name = this.getNestedFieldName( field_name );
+					var nested_value = this.getNestedValue( field_name );
 					var value = 0;
-					try {
-						value = eval( "record" + nested_name ) || 0;
-					} catch(e) {
-						window.console &&  console.log( "Using a 0 because evaluating gave: " + e.message + " (" + nested_name + ")");
-					}
-						
-					result = result.replace( field_name, value );
+
+					result = result.replace( field_name, nested_value );
 				} else  {
 					// not really a field name
 					if ( typeof( parseFloat( field_name, 10 )) == "float" ) { value = field_name; }
@@ -82,21 +78,37 @@ var FormulaUtilities = function(formula) {
 		return result;
 	};
 	
-	this.getNestedFieldName = function(name) {
+	this.getNestedValue = function(name) {
+		console.log( "nested:",name, record_under_test);
 		var field_array = name.split(/\./);
-		var field_name = "['" + field_array.join("']['") + "']";
+		var field_statement = "record_under_test['" + field_array.join("']['") + "']";
+		var value = "";
+
+		if ( typeof(record_under_test[field_array[0]]) == "string" ) {
+			value = '"' + record_under_test[field_array.shift()] + '".' + field_array.join(".") ;
+			console.log("I'm a string!", field_statement);
+		}
 		
-		return field_name;
+		if ( value === "" ) {	
+			try {
+				console.log( "evaluating", field_statement);
+				value = eval( field_statement ) || 0;
+			} catch(e) {
+				window.console &&  console.log( "Using a '' because evaluating gave: " + e.message + " (" + field_statement + ")");
+			}
+		}
+		
+		return value;
 	};
 	
 	this.calculate = function( record ) {
 		var parsed_formula = this.getParsedFormula(record);
-		
+		window.console && console.log( "Parsed Formula:", parsed_formula);
 		var value = null;
 		try {
 			var value = eval(parsed_formula);
 		} catch(e) {
-			window.console && console.log( "Couldn't evaluate ", parsed_formula, " (", e.message, ")");
+			window.console && console.log( "Returning null because couldn't evaluate ", parsed_formula, " (", e.message, ")");
 		}
 		return value;
 	};

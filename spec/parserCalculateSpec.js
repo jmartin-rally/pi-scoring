@@ -22,6 +22,8 @@ describe("ParserCalculateTests", function() {
 				Parent: { int_field: 5 }
 		};
 		
+		
+		
 		object_with_deep_parentage = {
 				other_field: 10,
 				Parent: {
@@ -142,4 +144,21 @@ describe("ParserCalculateTests", function() {
     	expect(parser.calculate(object_with_parent)).toEqual(15);
     });
     
+    it("should allow JavaScript replace method on strings", function() {
+    	parser.setFormula("newField = Priority.replace('a','')");
+    	var test_object = { Priority: "abc" };
+    	expect(parser.calculate(test_object)).toEqual("bc");
+    	
+    	test_object.Priority = "P1";
+    	parser.setFormula("newField = Priority.replace('P','') * 5")
+    	expect(parser.calculate(test_object)).toEqual(5)
+	});
+    
+    it("should not fail when JS replace method on missing field", function() {
+    	parser.setFormula("newField = NotAField.replace('a','')");
+    	expect(parser.calculate(object_with_parent)).toEqual('');
+    	
+    	parser.setFormula("newField = ( NotAField.replace('a','') || 0 ) * 1 ");
+    	expect(parser.calculate(object_with_parent)).toEqual(0);
+    });
 });

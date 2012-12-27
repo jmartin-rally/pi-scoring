@@ -82,7 +82,7 @@ Ext.define('CustomApp', {
             stateEvents: ['selectionchange' ],
             stateful: true,
             stateId: 'pi-score-columns',
-            fieldWhiteList: ["ActualStartDate", "ActualEndDate", "PlannedStartDate", "PlannedEndDate", "PercentDoneByStoryCount", "PercentDoneByStoryPlanEstimate", "InvestmentCategory","RiskScore", "ValueScore"],
+            fieldWhiteList: ["ActualStartDate", "ActualEndDate", "PlannedStartDate", "PlannedEndDate", "PercentDoneByStoryCount", "PercentDoneByStoryPlanEstimate", "InvestmentCategory","RiskScore", "Tags", "ValueScore"],
             listeners: {
                 selectionchange: function( picker, values, options ) {
                     that._setAdditionalColumns(values);
@@ -103,7 +103,17 @@ Ext.define('CustomApp', {
         var that = this;
         that.additional_columns = [];
         Ext.Array.each( values, function(value) {
-            that.additional_columns.push( {text: value.displayName, dataIndex: value.name});
+            console.log( value );
+            var config = {
+                text: value.displayName, 
+                dataIndex: value.name
+            };
+            if ( /Date/.test(value.displayName) ) {
+                config.xtype = 'datecolumn';
+            } else if ( value.displayName === "Tags" ) {
+                config.xtype = 'tagscolumn';
+            }
+            that.additional_columns.push( config );
         });
         return true;
     },
