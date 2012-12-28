@@ -18,10 +18,15 @@ var hasTag = function( tag_name ) {
 var applyMap = function( variable, hash ) {
 	var result = hash['Default'] || hash['default'] || 0;
 	if ( record_under_test[variable] ) {
-		window.console && console.log( "..verified record has this field", variable, record_under_test[variable]);
-		if ( hash.hasOwnProperty( record_under_test[variable] )) {
-			window.console && console.log( "..and the value is in the hash", hash[record_under_test[variable]]);
-			result = hash[record_under_test[variable]];
+		var content = record_under_test[variable];
+		window.console && console.log( "..record has field", variable, "=", content);
+
+		content = content.replace(/ /g,"%20");
+		
+		window.console && console.log( "...looking in the hash for ", content);
+		if ( hash.hasOwnProperty( content )) {
+			window.console && console.log( "..and the value is in the hash", hash[content]);
+			result = hash[content];
 		}
 	}
 	return result;

@@ -187,7 +187,14 @@ describe("ParserCalculateTests", function() {
 
     	parser.setFormula( "newField = applyMap( 'Priority', {'P0': 5, 'P1': 3 })");
     	expect(parser.calculate(test_object)).toEqual(0);
-
+    });
+    
+    it("should be ok with a space in mapped values when translating", function(){
+    	parser.setFormula( "newField = applyMap('Priority', { 'Default':3, 'has%20several%20spaces': 5 })");
+    	var test_object = { Priority: "None" }
+    	expect(parser.calculate(test_object)).toEqual(3);
     	
+    	test_object.Priority = "has several spaces";
+    	expect(parser.calculate(test_object)).toEqual(5);
     });
 });
