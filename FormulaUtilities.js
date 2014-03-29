@@ -17,8 +17,8 @@ var hasTag = function( tag_name ) {
 
 var applyMap = function( variable, hash ) {
 	var result = hash['Default'] || hash['default'] || 0;
-	if ( record_under_test[variable] ) {
-		var content = record_under_test[variable];
+	if ( typeof( record_under_test[variable] ) !== undefined ) {
+		var content = '' + record_under_test[variable];
 		window.console && console.log( "..record has field", variable, "=", content);
 
 		content = content.replace(/ /g,"%20");
@@ -29,6 +29,7 @@ var applyMap = function( variable, hash ) {
 			result = hash[content];
 		}
 	}
+	window.console && console.log(".returning a value of ", result);
 	return result;
 }
 
@@ -133,6 +134,7 @@ var FormulaUtilities = function(formula) {
 		} catch(e) {
 			window.console && console.log( "Returning null because couldn't evaluate ", parsed_formula, " (", e.message, ")");
 		}
+		window.console && console.log("After parsing, returning ", value);
 		return value;
 	};
 	
